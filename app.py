@@ -1,8 +1,10 @@
 import os
 from flask import Flask, abort, jsonify
-import requests
+import httpx
 from werkzeug.exceptions import HTTPException
 app = Flask(__name__)
+app.config['ENV'] = 'development'
+app.config['DEBUG'] = True
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -21,11 +23,11 @@ def handle_http_exception(e):
     """Retourne du JSON au lieu du HTML pour les erreurs HTTP."""
     return error_response(e.code, e.name, e.description)
 
-@app.errorhandler(requests.exceptions.Timeout)
+@app.errorhandler(httpx.TimeoutException)
 def handle_timeout(e):
     return error_response(504, "Gateway Timeout", "TMDB n'a pas répondu à temps.")
 
-@app.errorhandler(requests.exceptions.RequestException)
+@app.errorhandler(httpx.RequestError)
 def handle_request_exception(e):
     return error_response(502, "Bad Gateway", "Impossible de contacter TMDB.")
 
@@ -39,14 +41,15 @@ def test():
     return jsonify({'message' : 'It works !'})
 
 @app.route('/api/movie/<int:movie_id>', methods=['GET'])
-def get_movie_details(movie_id):
+async def get_movie_details(movie_id):
     url = f"{TMDB_BASE_URL}/movie/{movie_id}"
     params = {
         "api_key": TMDB_API_KEY,
         "language": 'fr-FR',
     }
     # L'id 550 retourne Fight Club
-    response = requests.get(url, params=params, timeout=5)
+    async with httpx.AsyncClient(timeout=5) as client:
+        response = await client.get(url, params=params)
 
     if response.status_code == 404:
         abort(404, description=f"Film {movie_id} introuvable.")
@@ -54,7 +57,7 @@ def get_movie_details(movie_id):
         abort(502, description="Clé API TMDB invalide.")
     if response.status_code == 429:
         abort(503, description="Limite de requêtes TMDB atteinte.")
-    if not response.ok:
+    if not response.is_success:
         abort(502, description="Réponse inattendue de TMDB.")
 
     return jsonify(response.json())
