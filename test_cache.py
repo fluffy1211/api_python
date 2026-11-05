@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 os.environ.setdefault("API_KEY", "cle-de-test")
 
-from app import app, cache
+from api import app, cache
 
 
 def fake_tmdb(status_code=200, payload=None):
