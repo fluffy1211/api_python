@@ -33,7 +33,7 @@ class CacheTest(unittest.TestCase):
 
     def test_deuxieme_appel_servi_par_le_cache(self):
         tmdb = fake_tmdb()
-        with patch("app.httpx.AsyncClient", return_value=tmdb):
+        with patch("api.httpx.AsyncClient", return_value=tmdb):
             first = self.http.get("/api/movie/550")
             second = self.http.get("/api/movie/550")
 
@@ -43,7 +43,7 @@ class CacheTest(unittest.TestCase):
 
     def test_chaque_film_a_sa_propre_entree(self):
         tmdb = fake_tmdb()
-        with patch("app.httpx.AsyncClient", return_value=tmdb):
+        with patch("api.httpx.AsyncClient", return_value=tmdb):
             self.http.get("/api/movie/550")
             self.http.get("/api/movie/551")
 
@@ -51,7 +51,7 @@ class CacheTest(unittest.TestCase):
 
     def test_le_404_est_mis_en_cache(self):
         tmdb = fake_tmdb(status_code=404)
-        with patch("app.httpx.AsyncClient", return_value=tmdb):
+        with patch("api.httpx.AsyncClient", return_value=tmdb):
             first = self.http.get("/api/movie/999")
             second = self.http.get("/api/movie/999")
 
@@ -61,11 +61,11 @@ class CacheTest(unittest.TestCase):
 
     def test_le_503_n_est_pas_mis_en_cache(self):
         # TMDB répond 429 (limite atteinte), notre API renvoie 503
-        with patch("app.httpx.AsyncClient", return_value=fake_tmdb(status_code=429)):
+        with patch("api.httpx.AsyncClient", return_value=fake_tmdb(status_code=429)):
             first = self.http.get("/api/movie/550")
 
         # TMDB est rétabli : la requête suivante doit réussir
-        with patch("app.httpx.AsyncClient", return_value=fake_tmdb()):
+        with patch("api.httpx.AsyncClient", return_value=fake_tmdb()):
             second = self.http.get("/api/movie/550")
 
         self.assertEqual(first.status_code, 503)
@@ -73,7 +73,7 @@ class CacheTest(unittest.TestCase):
 
     def test_expiration_apres_une_heure(self):
         tmdb = fake_tmdb()
-        with patch("app.httpx.AsyncClient", return_value=tmdb):
+        with patch("api.httpx.AsyncClient", return_value=tmdb):
             with patch("cachelib.simple.time", return_value=1_000_000):
                 self.http.get("/api/movie/550")
 
