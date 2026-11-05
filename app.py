@@ -1,8 +1,11 @@
 import os
 from flask import Flask, abort, jsonify
+from flask_caching import Cache
 import httpx
 from werkzeug.exceptions import HTTPException
+
 app = Flask(__name__)
+cache = Cache(app, config={"CACHE_TYPE": "SimpleCache"})
 app.config['ENV'] = 'development'
 app.config['DEBUG'] = True
 
@@ -40,7 +43,11 @@ def handle_unexpected_exception(e):
 def test():
     return jsonify({'message' : 'It works !'})
 
+def cached_codes(response):
+    return response.status_code in [200, 404]
+
 @app.route('/api/movie/<int:movie_id>', methods=['GET'])
+@cache.cached(timeout=3600, response_filter=cached_codes)
 async def get_movie_details(movie_id):
     url = f"{TMDB_BASE_URL}/movie/{movie_id}"
     params = {
