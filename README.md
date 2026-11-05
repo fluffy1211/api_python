@@ -77,4 +77,16 @@ Les tests vérifient le comportement du cache. TMDB est simulé : ils ne font au
 python data.py
 ```
 
+`update_data.py` télécharge le dernier [export quotidien de TMDB](https://developer.themoviedb.org/docs/daily-id-exports) dans `movies.json`, puis lance `data.py`. Il ne demande pas de clé API :
+
+```bash
+python update_data.py
+```
+
+Pour le lancer tous les 3 mois (le 1er janvier, avril, juillet et octobre à 6 h), ajouter cette ligne avec `crontab -e` :
+
+```
+0 6 1 */3 * cd /Users/gabriel/Documents/code/api_python && .venv/bin/python update_data.py
+```
+
 L'API et l'interface n'utilisent pas cette base.
